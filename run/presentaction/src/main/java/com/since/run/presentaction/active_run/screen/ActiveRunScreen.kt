@@ -130,22 +130,43 @@ fun ActiveRunScreen(
                 permission = fineLocationPermission && coarseLocationPermission
             )
         )
+
+
+        /*when{
+            (!notificationPermission && (!fineLocationPermission && !coarseLocationPermission)) -> {
+                action(
+                    ActiveRunAction.NotificationInfo(
+                        rational = notificationRational,
+                        permission = context.notificationPermission()
+                    )
+                )
+                action(
+                    ActiveRunAction.LocationInfo(
+                        rational = locationRational,
+                        permission = context.coarseLocationPermission() && context.fineLocationPermission()
+                    )
+                )
+            }
+
+            !fineLocationPermission && !coarseLocationPermission -> {
+                action(
+                    ActiveRunAction.LocationInfo(
+                        rational = locationRational,
+                        permission = context.coarseLocationPermission() && context.fineLocationPermission()
+                    )
+                )
+            }
+
+            !notificationPermission ->{
+                action(
+                    ActiveRunAction.NotificationInfo(
+                        rational = notificationRational,
+                        permission = context.notificationPermission()
+                    )
+                )
+            }
+        }*/
     }
-
-
-
-    LaunchedEffect(true) {
-        if (!context.notificationPermission() &&
-            (!context.fineLocationPermission() && !context.coarseLocationPermission())
-        ) {
-            launchPermission.requestPermission(context = context)
-        } else if (!context.notificationPermission() ||
-            (!context.fineLocationPermission() && !context.coarseLocationPermission())
-        ) {
-            launchPermission.requestPermission(context = context)
-        }
-    }
-
 
 
     if (state.notificationRational || state.locationRational) {
@@ -178,28 +199,6 @@ fun ActiveRunScreen(
 
     }
 
-    SideEffect {
-        if ((context.notificationPermission() && context.fineLocationPermission())) {
-            action(
-                ActiveRunAction.NotificationInfo(
-                    rational = context.shouldShowNotificationRational(),
-                    permission = context.notificationPermission()
-                )
-            )
-
-            action(
-                ActiveRunAction.LocationInfo(
-                    rational = context.shouldShowLocationRational(),
-                    permission = context.coarseLocationPermission() && context.fineLocationPermission()
-                )
-            )
-            action(ActiveRunAction.ClearPermissionDialog)
-        }
-
-    }
-
-
-
 
     if ((state.notificationPermissionValid || state.locationPermissionValid)) {
         val content = when {
@@ -217,12 +216,36 @@ fun ActiveRunScreen(
         }
 
         RunsDialog(
-            title = "Permission Required", content = content, primaryButton = {
+            title = "Permission Required",
+            content = content,
+            primaryButton = {
                 RunsFullButton(
                     hint = "Open Settings", isEnable = true, onClick = {
                         context.goToAppSetting()
                     })
             })
+    }
+
+    SideEffect {
+        val notificationPermission = context.notificationPermission()
+        val locationPermission =
+            context.fineLocationPermission() && context.coarseLocationPermission()
+        if (notificationPermission && locationPermission) {
+            action(
+                ActiveRunAction.NotificationInfo(
+                    rational = context.shouldShowNotificationRational(),
+                    permission = context.notificationPermission()
+                )
+            )
+
+            action(
+                ActiveRunAction.LocationInfo(
+                    rational = context.shouldShowLocationRational(),
+                    permission = context.coarseLocationPermission() && context.fineLocationPermission()
+                )
+            )
+            action(ActiveRunAction.ClearPermissionDialog)
+        }
     }
 
 
@@ -233,10 +256,7 @@ fun ActiveRunScreen(
                 val notificationPermission = context.notificationPermission()
                 val locationPermission =
                     context.fineLocationPermission() && context.coarseLocationPermission()
-
-
-
-                if (notificationPermission || locationPermission) {
+                if (notificationPermission && locationPermission) {
                     action(
                         ActiveRunAction.NotificationInfo(
                             rational = context.shouldShowNotificationRational(),
@@ -250,8 +270,9 @@ fun ActiveRunScreen(
                             permission = context.coarseLocationPermission() && context.fineLocationPermission()
                         )
                     )
-
                     action(ActiveRunAction.ClearPermissionDialog)
+                }else{
+                    launchPermission.requestPermission(context)
                 }
             }
         }
